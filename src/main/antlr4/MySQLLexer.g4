@@ -813,11 +813,11 @@ fragment USER_VAR_SUBFIX2:	( '\'' (~'\'')+ '\'' ) ;
 fragment USER_VAR_SUBFIX3:	( '\"' (~'\"')+ '\"' ) ;
 fragment USER_VAR_SUBFIX4:	( 'A'..'Z' | 'a'..'z' | '_' | '$' | '0'..'9' | DOT )+ ;
 
-WHITE_SPACE	: ( ' '|'\r'|'\t'|'\n' ) {$channel=HIDDEN;} ;
+WHITE_SPACE	: ( ' '|'\r'|'\t'|'\n' )+ -> skip ;
 
 // http://dev.mysql.com/doc/refman/5.6/en/comments.html
-SL_COMMENT	: ( ('--'|'#') ~('\n'|'\r')* '\r'? '\n' ) {$channel=HIDDEN;} ;
-ML_COMMENT	: '/*' ( options {greedy=false;} : . )* '*/' {$channel=HIDDEN;} ;
+SL_COMMENT	: ( ('--'|'#') ~('\n'|'\r')* '\r'? '\n' ) -> skip ;
+ML_COMMENT	: '/*' ( options {greedy=false;} : . )* '*/' -> skip ;
 
 
 // data type definition -----  http://dev.mysql.com/doc/refman/5.6/en/data-types.html  ---------------
@@ -885,10 +885,10 @@ datetypes_decl:
 
 
 // basic type definition -----------------------------------------------------------------------
-relational_op:
+RELATIONAL_OP:
 	EQ_SYM | LTH | GTH | NOT_EQ | LET | GET  ;
 
-charset_name:
+CHARSET_NAME:
 	  ARMSCII8
 	| ASCII_SYM
 	| BIG5
@@ -926,7 +926,7 @@ charset_name:
 	| UJIS
 	| UTF8;
 
-cast_data_type:
+CAST_DATA_TYPE:
 	BINARY (INTEGER_NUM)?
 	| CHAR (INTEGER_NUM)?
 	| DATE_SYM
@@ -937,19 +937,19 @@ cast_data_type:
 	| UNSIGNED_SYM (INTEGER_SYM)?
 ;
 
-search_modifier:
+SEARCH_MODIFIER:
 	(IN_SYM NATURAL LANGUAGE MODE_SYM)
 	| (IN_SYM NATURAL LANGUAGE MODE_SYM WITH QUERY_SYM EXPANSION_SYM)
 	| (IN_SYM BOOLEAN_SYM MODE_SYM)
 	| (WITH QUERY_SYM EXPANSION_SYM)
 ;
 
-transcoding_name:
+TRANSCODING_NAME:
 	  LATIN1
 	| UTF8
 ;
 
-interval_unit:
+INTERVAL_UNIT:
 	  SECOND
 	| MINUTE
 	| HOUR
@@ -971,31 +971,31 @@ interval_unit:
 	| YEAR_MONTH
 ;
 
-collation_names:
+COLLATION_NAMES:
 	LATIN1_GENERAL_CS | LATIN1_BIN
 ;
 
 // basic const data definition ---------------------------------------------------------------
-string_literal:		TEXT_STRING ;
-number_literal:		(PLUS | MINUS)? (INTEGER_NUM | REAL_NUMBER) ;
+STRING_LITERAL:		TEXT_STRING ;
+NUMBER_LITERAL:		(PLUS | MINUS)? (INTEGER_NUM | REAL_NUMBER) ;
 //date_time_literal: 	;
-hex_literal:		HEX_DIGIT;
-boolean_literal:	TRUE_SYM | FALSE_SYM ;
-bit_literal:		BIT_NUM;
+HEX_LITERAL:		HEX_DIGIT;
+BOOLEAN_LITERAL:	TRUE_SYM | FALSE_SYM ;
+BIT_LITERAL:		BIT_NUM;
 
 // http://dev.mysql.com/doc/refman/5.6/en/literals.html
-literal_value:
-        ( string_literal | number_literal | hex_literal | boolean_literal | bit_literal | NULL_SYM ) ;
+LITERAL_VALUE:
+        ( STRING_LITERAL | NUMBER_LITERAL | HEX_LITERAL | BOOLEAN_LITERAL | BIT_LITERAL | NULL_SYM ) ;
 
 // function defintion ------  http://dev.mysql.com/doc/refman/5.6/en/func-op-summary-ref.html  ----------
-functionList:
-	  number_functions
-	| char_functions
-	| time_functions
-	| other_functions
+FUNCTION_LIST:
+	  NUMBER_FUNCTIONS
+	| CHAR_FUNCTIONS
+	| TIME_FUNCTIONS
+	| OTHER_FUNCTIONS
 ;
 
-number_functions:
+NUMBER_FUNCTIONS:
 	  ABS
 	| ACOS
 	| ASIN
@@ -1028,7 +1028,7 @@ number_functions:
 	| TRUNCATE
 ;
 
-char_functions:
+CHAR_FUNCTIONS:
 	  ASCII_SYM
 	| BIN
 	| BIT_LENGTH
@@ -1075,7 +1075,7 @@ char_functions:
 	| WEIGHT_STRING
 ;
 
-time_functions:
+TIME_FUNCTIONS:
 	  ADDDATE
 	| ADDTIME
 	| CONVERT_TZ
@@ -1131,7 +1131,7 @@ time_functions:
 	| YEARWEEK
 ;
 
-other_functions:
+OTHER_FUNCTIONS:
 	MAKE_SET | LOAD_FILE
 	| IF | IFNULL
 	| AES_ENCRYPT | AES_DECRYPT
@@ -1151,7 +1151,7 @@ other_functions:
 	| VALUES
 ;
 
-group_functions:
+GROUP_FUNCTIONS:
 	AVG | COUNT | MAX_SYM | MIN_SYM | SUM
 	| BIT_AND | BIT_OR | BIT_XOR
 	| GROUP_CONCAT
@@ -1160,22 +1160,22 @@ group_functions:
 ;
 
 // identifiers ---  http://dev.mysql.com/doc/refman/5.6/en/identifiers.html --------------
-schema_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("schema name = \%s \n",(char*)($tmpName.text->chars));};
-table_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("table name = \%s \n",(char*)($tmpName.text->chars));};
-engine_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("engine name = \%s \n",(char*)($tmpName.text->chars));};
-column_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("column name = \%s \n",(char*)($tmpName.text->chars));};
-view_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("view name = \%s \n",(char*)($tmpName.text->chars));};
-parser_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("index name = \%s \n",(char*)($tmpName.text->chars));};
-index_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("index name = \%s \n",(char*)($tmpName.text->chars));};
-partition_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("partition name = \%s \n",(char*)($tmpName.text->chars));};
-partition_logical_name		: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("partition logical name = \%s \n",(char*)($tmpName.text->chars));};
-constraint_symbol_name		: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("constraint symbol name = \%s \n",(char*)($tmpName.text->chars));};
-foreign_key_symbol_name		: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("foreign key symbol name = \%s \n",(char*)($tmpName.text->chars));};
-collation_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("collation name = \%s \n",(char*)($tmpName.text->chars));};
-event_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("event name = \%s \n",(char*)($tmpName.text->chars));};
-user_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("user name = \%s \n",(char*)($tmpName.text->chars));};
-function_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("function name = \%s \n",(char*)($tmpName.text->chars));};
-procedure_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("procedure name = \%s \n",(char*)($tmpName.text->chars));};
-server_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("server name = \%s \n",(char*)($tmpName.text->chars));};
-wrapper_name			: tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 64}? {printf("wrapper name = \%s \n",(char*)($tmpName.text->chars));};
-alias				: ( AS_SYM )? tmpName=ID {strlen((const char *)$tmpName.text->chars) <= 256}? {printf("alias = \%s \n",(char*)($tmpName.text->chars));};
+SCHEMA_NAME			: ID;
+TABLE_NAME			: ID;
+ENGINE_NAME			: ID;
+COLUMN_NAME			: ID;
+VIEW_NAME			  : ID;
+PARSER_NAME			: ID;
+INDEX_NAME			: ID;
+PARTITION_NAME			: ID;
+PARTITION_LOGICAL_NAME		: ID;
+CONSTRAINT_SYMBOL_NAME		: ID;
+FOREIGN_KEY_SYMBOL_NAME		: ID;
+COLLATION_NAME			: ID;
+EVENT_NAME			: ID;
+USER_NAME			: ID;
+FUNCTION_NAME			: ID;
+PROCEDURE_NAME			: ID;
+SERVER_NAME			: ID;
+WRAPPER_NAME			: ID;
+ALIAS				: ID;
